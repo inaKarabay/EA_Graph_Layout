@@ -1,0 +1,14 @@
+GENETIC ALGORITHM
+
+FOR GRAPH LAYOUT
+	good when many constrains but few nodes
+
+Input Data
+
+Genotype presentation
+
+Phenotype presentation
+
+
+An Evolutionary Algorithm for Drawing Directed Graphs
+	

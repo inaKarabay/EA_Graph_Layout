@@ -1,0 +1,44 @@
+GRAPH LAYOUT
+	source: 
+		https://www.baeldung.com/cs/graph-auto-layout-algorithm
+		http://cs.brown.edu/people/rtamassi/papers/gd-tutorial/gd-constraints.pdf
+	Representations
+		· formal representations:  edge lists, adjacency matrices, and adjacency lists
+	Geometrical Constraints:
+		- minimization of the horizontal or vertical space 
+		- minimization of the total surface area
+		- limitations on the placement or shaping of edges
+			· edges = bend (polyline drawing)
+			· edges = straight segments (planar straight-line drawing)
+			· edges = parallel to each other (Orthogonal Graphs/drawing)
+				-> not possible if (at least) one node has more than 4 edges!	
+			· edges = only upwards flow (upward planar graph)
+				-> for directed acyclic graph
+	Layout Aesthetics
+		- Minimization of Edge Crossings
+		- Minimization of Graph Area
+			-> tradeoff between readability of graph and compactness
+		- Minimization of Bends in edges (in Orthogonal Graphs)
+		- Maximization of the Smallest Angle
+			-> smalles angle between two edges should be as large as possible
+		- Maximization of the Shown Symmetries
+			-> displaying of the maximum number of symmetries
+			-> can be tradeoff with number of edge crossings
+		- Resolution Rules 
+			minimum distance of edges, angles, between non adjecent vertexes
+	Graph specific semantics
+		- additional constraints: 
+			most important vertexes in the middle
+			group some vertexes together
+	Complexity
+		testing planarity  linear time
+		testing upward planarity  NP-hard
+		minimizing crossings is NP-hard
+		minimizing bends in planar orthogonal drawing NP-hard
+
+	Algorithms		
+		Tree drawing algorithms
+		Force-based algorithms
+		Bend minimization algorithms
+		Dominance drawing algorithms
+

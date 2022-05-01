@@ -1,0 +1,7 @@
+Simple EA for Graph Layouts
+
+Vorgehen
+	Optimierung von evolutionären Parametern
+	Implementierung weiterer Mutations- und Selektions-Verfahren
+	Implementierung komplexer Kantenlayouts (Eckpunkte)
+	Optimierung der Fitnessfunktion anhand mehrerer Ziele
