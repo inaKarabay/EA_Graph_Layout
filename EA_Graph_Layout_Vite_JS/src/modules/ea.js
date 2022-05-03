@@ -1,7 +1,7 @@
 //import * as echarts from 'echarts';
-import { graph1, graph2 } from '../modules/graphs';
+import { graph1, graph2, graph3 } from '../modules/graphs';
 
-export var graph = graph1; 
+export var graph = graph3; 
 export var infoDiv = document.getElementById('info');
 export var chart = echarts.init(document.getElementById('canvas'));
 export var chartTimeline = echarts.init(document.getElementById('canvasTimeline'));
@@ -345,7 +345,7 @@ function evolutionStep() {
   fitnessList.sort(function(a, b) {
   	return b - a;
 	});
-  infoDiv.innerHTML = currentEvolutionStep + ", Best fitness: " + " (" + fitnessList.toString().replaceAll(',', ', ') + ")";
+  infoDiv.innerHTML = "Run # " + currentEvolutionStep + "<br />" + "Best fitness: " + " (" + fitnessList.toString().replaceAll(',', ', ') + ")";
   for (var i = 0; i < graph.nodes.length; i++) {
     graph.nodes[i].x = solutions[0][0][i * 2];
     graph.nodes[i].y = solutions[0][0][i * 2 + 1];

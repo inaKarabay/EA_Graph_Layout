@@ -6,7 +6,7 @@ import { infoDiv , graph, chartTimeline, chart } from '../modules/ea';
 </script>
 
 <template>
-    <div> {{ infoDiv }} </div>
+
 </template>
 
 <style scoped>

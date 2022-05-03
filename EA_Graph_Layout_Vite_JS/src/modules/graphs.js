@@ -2442,4 +2442,36 @@ export var graph1 = {
   }, ],
   };
   
-  
+  export var graph3 = {
+    nodes: [
+      { name: "Anatomy" },
+      { name: "Gene" },
+      { name: "Chemical" },
+      { name: "Disease" },
+      { name: "VariantAnnotation", symbol: "diamond" },
+      { name: "Phenotype" },
+      { name: "ClinicalAnnotation", symbol: "diamond" },
+      { name: "Pathway" },
+    ],
+    edges: [
+      { source: "Anatomy", target: "Gene" },
+      { source: "Gene", target: "Gene" },
+      { source: "Chemical", target: "Gene" },
+      { source: "Disease", target: "Gene" },
+      { source: "VariantAnnotation", target: "Gene" },
+      { source: "Phenotype", target: "Gene" },
+      { source: "ClinicalAnnotation", target: "Gene" },
+      { source: "Gene", target: "Pathway" },
+      { source: "Pathway", target: "Pathway" },
+      { source: "Chemical", target: "Pathway" },
+      { source: "Chemical", target: "Chemical" },
+      { source: "ClinicalAnnotation", target: "Chemical" },
+      { source: "VariantAnnotation", target: "Chemical" },
+      { source: "Gene", target: "Chemical" },
+      { source: "Disease", target: "Disease" },
+      { source: "Chemical", target: "Disease" },
+      { source: "ClinicalAnnotation", target: "Disease" },
+      { source: "Pathway", target: "Disease" },
+      { source: "ClinicalAnnotation", target: "Phenotype" },
+    ]
+  };
