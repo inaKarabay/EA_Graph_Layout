@@ -1,4 +1,3 @@
-//import * as echarts from 'echarts';
 import { graph1, graph2, graph3 } from '../modules/graphs';
 
 export var graph = graph3; 
@@ -9,22 +8,8 @@ export var chartTimeline = echarts.init(document.getElementById('canvasTimeline'
 //size of nodes
 var nodeRadius = 10
 
-
-var nodeIdIndexMap = {};
-for (var i = 0; i < graph.nodes.length; i++) {
-	nodeIdIndexMap[graph.nodes[i].id || graph.nodes[i].name] = i;
-}
-
 var width = 600;
 var height = 600;
-for (var i = 0; i < graph.nodes.length; i++) {
-  graph.nodes[i].x = Math.random() * width;
-  graph.nodes[i].y = Math.random() * height;
-  if (graph.nodes[i].symbolSize === undefined) {
-  	graph.nodes[i].symbolSize = nodeRadius;
-  }
-}
-
 var COOLING_RATE = 0.25;
 var CRITERION = 15;
 var C = 0.4;
@@ -33,6 +18,70 @@ var k = C * Math.sqrt(area / graph.nodes.length);
 var t = width * 0.1;
 var equilibriumReached = false;
 var iteration = 0;
+
+var evolutionSteps = 100000;
+var currentEvolutionStep = 0;
+var solutionSize = graph.nodes.length * 2;
+var populationSize = 20;
+var elitismSize = 5;
+var solutions = [];
+
+var option = {
+	animation: false,
+  series: [{
+    type: 'graph',
+    layout: 'none',
+    nodes: graph.nodes,
+    edges: graph.edges,
+    categories: graph.categories,
+    symbol: "circle",
+  }]
+};
+chart.setOption(option);
+var timelineData = [];
+var optionTimeline = {
+	animation: false,
+  xAxis: {
+    type: 'value'
+  },
+  yAxis: {
+    type: 'log',
+    min: 0.1
+  },
+  series: [{
+    type: 'line',
+    showSymbol: false,
+    data: timelineData
+  }]
+};
+chartTimeline.setOption(optionTimeline);
+
+/**
+ * 
+ * 
+ */ 
+function indexMap(graph) {
+  var nodeIdIndexMap = {}
+  for (var i = 0; i < graph.nodes.length; i++) {
+    nodeIdIndexMap[graph.nodes[i].id || graph.nodes[i].name] = i;
+  }
+  return nodeIdIndexMap
+}
+var nodeIdIndexMap = indexMap(graph);
+
+function nodeCoordinates(graph) {
+  for (var i = 0; i < graph.nodes.length; i++) {
+    graph.nodes[i].x = Math.random() * width;
+    graph.nodes[i].y = Math.random() * height;
+    if (graph.nodes[i].symbolSize === undefined) {
+      graph.nodes[i].symbolSize = nodeRadius;
+    }
+  }
+  return graph
+}
+
+graph = nodeCoordinates(graph)
+
 
 function vectorLength(x, y) {
 	return Math.sqrt(x * x + y * y);
@@ -113,40 +162,16 @@ function simulateForceDirectedStep() {
   return equilibriumReached;
 }
 
-while (!equilibriumReached && iteration < 1000) {
-	equilibriumReached = simulateForceDirectedStep();
-	iteration++;
+function reachEquilibrium() {
+  while (!equilibriumReached && iteration < 1000) {
+    equilibriumReached = simulateForceDirectedStep();
+    iteration++;
+  }
 }
 
-var option = {
-	animation: false,
-  series: [{
-    type: 'graph',
-    layout: 'none',
-    nodes: graph.nodes,
-    edges: graph.edges,
-    categories: graph.categories,
-    symbol: "circle",
-  }]
-};
-chart.setOption(option);
-var timelineData = [];
-var optionTimeline = {
-	animation: false,
-  xAxis: {
-    type: 'value'
-  },
-  yAxis: {
-    type: 'log',
-    min: 0.1
-  },
-  series: [{
-    type: 'line',
-    showSymbol: false,
-    data: timelineData
-  }]
-};
-chartTimeline.setOption(optionTimeline);
+reachEquilibrium()
+
+
 
 function intersectsLineLine(a, b, c, d, p, q, r, s) {
   var det, gamma, lambda;
@@ -247,25 +272,25 @@ function fitness(solution) {
   return score;
 }
 
-var evolutionSteps = 100000;
-var currentEvolutionStep = 0;
-var solutionSize = graph.nodes.length * 2;
-var populationSize = 20;
-var elitismSize = 5;
-var solutions = [];
-for (var k = 0; k < populationSize; k++) {
-  var solution = [];
-  for (var i = 0; i < graph.nodes.length; i++) {
-  	if (k === 0) {
-      solution.push(graph.nodes[i].x);
-      solution.push(graph.nodes[i].y);
-    } else {
-      solution.push(Math.random() * width);
-      solution.push(Math.random() * height);
+function solutionsUpdate(solutions, populationSize, graph) {
+  for (var k = 0; k < populationSize; k++) {
+    var solution = [];
+    for (var i = 0; i < graph.nodes.length; i++) {
+      if (k === 0) {
+        solution.push(graph.nodes[i].x);
+        solution.push(graph.nodes[i].y);
+      } else {
+        solution.push(Math.random() * width);
+        solution.push(Math.random() * height);
+      }
     }
+    solutions.push([solution, fitness(solution)]);
   }
-  solutions.push([solution, fitness(solution)]);
+  return solutions
 }
+
+solutions = solutionsUpdate(solutions, populationSize, graph)
+
 
 function evolutionStep() {
   for (var i = 0; i < populationSize; i++) {
