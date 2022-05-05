@@ -9,6 +9,7 @@ App.vue Main vue component containing all sub-components
 scr/modules contain JS Files
 scr/modules/graphs.js Stores the graphs
 scr/modules/ea.js Contains the main Functions for the Evolutionary Algorithm
+
 Functions:
 vectorLength -> computes euclidian distance of two nodes
 forceAttractive -> used in simulateForceDirectedStep
@@ -42,6 +43,11 @@ Resolution Rule? : ähnliche kantenlängen gut, quadratische fläche von Graph g
 Mutation größer?
 Ergebniss zwischenspeichern? (dass nur neue Verbindungen in fitness berechnet werden)
 Fitness: https://reference.wolfram.com/language/guide/GraphMeasures.html
+
+
+Questions: reachEquilibrium() not needed?
+isnt nodeSwap part of Crossover?
+
 
 
 

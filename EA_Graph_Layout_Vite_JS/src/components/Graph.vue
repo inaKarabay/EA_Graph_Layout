@@ -1,12 +1,12 @@
 <script setup>
 import { ref } from 'vue'
-import { infoDiv , graph, chartTimeline, chart } from '../modules/ea';
+import { infoDiv , graph, chartTimeline, chart, printt } from '../modules/ea';
 
 
 </script>
 
 <template>
-
+  {{ printt }}
 </template>
 
 <style scoped>

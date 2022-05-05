@@ -1,19 +1,25 @@
 import { graph1, graph2, graph3 } from '../modules/graphs';
 
-export var graph = graph3; 
+export var graph = graph1; 
 export var infoDiv = document.getElementById('info');
 export var chart = echarts.init(document.getElementById('canvas'));
 export var chartTimeline = echarts.init(document.getElementById('canvasTimeline'));
 
 //size of nodes
 var nodeRadius = 10
-
+//max graph width
 var width = 600;
+//max graph height
 var height = 600;
+
 var COOLING_RATE = 0.25;
+//if change to be made is smaller than this criterion it stops
 var CRITERION = 15;
 var C = 0.4;
+//area of graph
+//TODO why not width*height?
 var area = Math.min(width * width, height * height);
+//approximate area a node can use???
 var k = C * Math.sqrt(area / graph.nodes.length);
 var t = width * 0.1;
 var equilibriumReached = false;
@@ -22,6 +28,7 @@ var iteration = 0;
 var evolutionSteps = 100000;
 var currentEvolutionStep = 0;
 var solutionSize = graph.nodes.length * 2;
+var solutionCountSoFar = 0;
 var populationSize = 20;
 var elitismSize = 5;
 var solutions = [];
@@ -57,8 +64,7 @@ var optionTimeline = {
 chartTimeline.setOption(optionTimeline);
 
 /**
- * 
- * 
+ * nodeIdIndexMap: Gives each node a name and index
  */ 
 function indexMap(graph) {
   var nodeIdIndexMap = {}
@@ -67,8 +73,14 @@ function indexMap(graph) {
   }
   return nodeIdIndexMap
 }
-var nodeIdIndexMap = indexMap(graph);
-
+/**
+ * 
+ * @param {*} graph 
+ * x = x coordinate
+ * y = y coordinate
+ * randomly assigns coordinates
+ * @returns 
+ */
 function nodeCoordinates(graph) {
   for (var i = 0; i < graph.nodes.length; i++) {
     graph.nodes[i].x = Math.random() * width;
@@ -80,17 +92,40 @@ function nodeCoordinates(graph) {
   return graph
 }
 
-graph = nodeCoordinates(graph)
-
-
+/**
+ * 
+ * @param {*} x node coordinate
+ * @param {*} y node coordinate
+ * @returns vector length
+ */
 function vectorLength(x, y) {
 	return Math.sqrt(x * x + y * y);
 }
 
+//use in simulateForceDirectedStep
+function nodeDistance(node1, node2) {
+  var deltaPosX = node1.x - node2.x;
+  var deltaPosY = node1.y - node2.y;
+  var distance = vectorLength(deltaPosX, deltaPosY);
+  return distance
+}
+
+/**
+ * 
+ * @param {*} d distance to force
+ * @param {*} k factor of attraction
+ * @returns force
+ */
 function forceAttractive(d, k) {
   return (d * d) / k;
 }
 
+/**
+ * 
+ * @param {*} d distance to repulsive object
+ * @param {*} k factor of repulsion
+ * @returns 
+ */
 function forceRepulsive(d, k) {
   return (k * k) / d;
 }
@@ -101,9 +136,12 @@ function simulateForceDirectedStep() {
     v.displacementX = 0;
     v.displacementY = 0;
     // Light attraction to center of canvas
+
+    //distance from x/y to the center of the canvas 
     var centerOffsetX = (width * 0.5) - v.x;
     var centerOffsetY = (height * 0.5) - v.y;
     var distanceFromCenter = vectorLength(centerOffsetX, centerOffsetY);
+
     var centerAttraction = forceAttractive(distanceFromCenter, k);
     v.displacementX += centerOffsetX * (1.0 / distanceFromCenter) * centerAttraction * 0.25;
     v.displacementY += centerOffsetY * (1.0 / distanceFromCenter) * centerAttraction * 0.25;
@@ -113,6 +151,7 @@ function simulateForceDirectedStep() {
       if (i === j) {
         continue;
       }
+      //distance from the two nodes
       var deltaPosX = v.x - u.x;
       var deltaPosY = v.y - u.y;
       var length = vectorLength(deltaPosX, deltaPosY);
@@ -131,6 +170,7 @@ function simulateForceDirectedStep() {
     if (vi === ui) {
       continue;
     }
+    //v and u are connected nodes
     var v = graph.nodes[vi];
     var u = graph.nodes[ui];
     var deltaPosX = v.x - u.x;
@@ -153,14 +193,18 @@ function simulateForceDirectedStep() {
     if (length > CRITERION) {
       equilibriumReached = false;
     }
+    //change at most as big as t
     displacementX *= (1.0 / length) * Math.min(length, t);
     displacementY *= (1.0 / length) * Math.min(length, t);
+    //set the change
     v.x += displacementX;
     v.y += displacementY;
   }
+  //TODO is t ever changed??
   t = Math.max(t * (1 - COOLING_RATE), 1);
   return equilibriumReached;
 }
+
 
 function reachEquilibrium() {
   while (!equilibriumReached && iteration < 1000) {
@@ -169,13 +213,14 @@ function reachEquilibrium() {
   }
 }
 
-reachEquilibrium()
-
-
-
+/**
+ * Checks if two edges intersect
+ * https://stackoverflow.com/questions/9043805/test-if-two-lines-intersect-javascript-function
+ */
 function intersectsLineLine(a, b, c, d, p, q, r, s) {
   var det, gamma, lambda;
   det = (c - a) * (s - q) - (r - p) * (d - b);
+  //vectors are linear dependent / parallel -> no intersection
   if (det === 0) {
     return false;
   }
@@ -184,6 +229,9 @@ function intersectsLineLine(a, b, c, d, p, q, r, s) {
   return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
 }
 
+/**
+ * checks is edge and node intersect
+ */
 function intersectsLineCircle(sx, sy, tx, ty, cx, cy, cr) {
   var dist;
   const v1x = tx - sx;
@@ -206,6 +254,11 @@ function intersectsLineCircle(sx, sy, tx, ty, cx, cy, cr) {
   return dist < cr * cr;
 }
 
+/**
+ * 
+ * @param {*} solution graph proposal
+ * @returns fitness score for given graph
+ */
 function fitness(solution) {
   var score = 0;
   // Penalize overlapping nodes
@@ -272,10 +325,15 @@ function fitness(solution) {
   return score;
 }
 
-function solutionsUpdate(solutions, populationSize, graph) {
+/**
+ * 
+ * @returns new graph solutions + their fitness for whole population
+ */
+function solutionsUpdate() {
   for (var k = 0; k < populationSize; k++) {
     var solution = [];
     for (var i = 0; i < graph.nodes.length; i++) {
+      //initial graph stays
       if (k === 0) {
         solution.push(graph.nodes[i].x);
         solution.push(graph.nodes[i].y);
@@ -289,12 +347,11 @@ function solutionsUpdate(solutions, populationSize, graph) {
   return solutions
 }
 
-solutions = solutionsUpdate(solutions, populationSize, graph)
-
-
-function evolutionStep() {
+function mutation() {
   for (var i = 0; i < populationSize; i++) {
+    //TODO isnt Math.random() always <1 ?
     if (Math.random() < 1.5) {
+      //mutation of one coordinate of one node
       var mutationIndex = Math.floor(Math.random() * solutionSize);
       var newSolution = [...solutions[i][0]];
       var offset = Math.random() * 100.0 - 50.0;
@@ -302,7 +359,9 @@ function evolutionStep() {
       solutions.push([newSolution, fitness(newSolution)]);
     }
   }
-  // Random node swap
+}
+
+function nodeSwap() {
   var nodeSwapSolution = Math.floor(Math.random() * solutions.length);
   var nodeSwapPosition1 = Math.floor(Math.random() * graph.nodes.length) * 2;
   var nodeSwapPosition2 = Math.floor(Math.random() * graph.nodes.length) * 2;
@@ -314,8 +373,10 @@ function evolutionStep() {
   newSolution[nodeSwapPosition2] = tempX;
   newSolution[nodeSwapPosition2 + 1] = tempY;
   solutions.push([newSolution, fitness(newSolution)]);
-  var solutionCountSoFar = solutions.length;
-  // Random crossing-over
+  solutionCountSoFar = solutions.length;
+}
+
+function crossover() {
   for (var k = 0; k < 10; k++) {
     var crossoverIndex1 = Math.floor(Math.random() * solutionCountSoFar);
     var crossoverIndex2 = Math.floor(Math.random() * solutionCountSoFar);
@@ -349,33 +410,14 @@ function evolutionStep() {
   var crossoverIndex1 = 0;
   var crossoverIndex2 = Math.floor(Math.random() * solutionCountSoFar);
   while (crossoverIndex2 === 0) {
-  	crossoverIndex2 = Math.floor(Math.random() * solutionCountSoFar);
+    crossoverIndex2 = Math.floor(Math.random() * solutionCountSoFar);
   }
   var crossoverPosition = Math.floor(Math.random() * solutionSize);
   solutions.push(solutions[crossoverIndex1].slice(0, crossoverPosition).concat(solutions[crossoverIndex2].slice(crossoverPosition)));
-  // Sort by fitness
-  solutions.sort(function(a, b) {
-    return (a[1] > b[1]) ? -1 : ((b[1] > a[1]) ? 1 : 0);
-  });
-  var nextGeneration = solutions.slice(0, elitismSize);
-  var selectionPool = solutions.slice(elitismSize);
-  // TODO: proper tournament or roulette selection
-  while (nextGeneration.length < populationSize) {
-  	var index = Math.floor(Math.random() * selectionPool.length);
-    nextGeneration.push(selectionPool[index]);
-    selectionPool.splice(index, 1);
-  }
-  solutions = nextGeneration;
-  var fitnessList = solutions.map((x) => x[1]);
-  fitnessList.sort(function(a, b) {
-  	return b - a;
-	});
-  infoDiv.innerHTML = "Run # " + currentEvolutionStep + "<br />" + "Best fitness: " + " (" + fitnessList.toString().replaceAll(',', ', ') + ")";
-  for (var i = 0; i < graph.nodes.length; i++) {
-    graph.nodes[i].x = solutions[0][0][i * 2];
-    graph.nodes[i].y = solutions[0][0][i * 2 + 1];
-  }
-  currentEvolutionStep++;
+  
+}
+
+function updateChartTimeline(fitnessList) {
   option.series[0].data = graph.nodes;
   chart.setOption(option);
   if (timelineData.length === 0 || timelineData[timelineData.length - 1][1] > Math.abs(fitnessList[0])) {
@@ -390,10 +432,59 @@ function evolutionStep() {
   }
 }
 
+function updateInfo(fitnessList) {
+  infoDiv.innerHTML = "Run # " + currentEvolutionStep + "<br />" + "Best fitness: " + " (" + fitnessList.toString().replaceAll(',', ', ') + ")";
+}
+
+function getNextGeneration() {
+  // Sort by fitness
+  solutions.sort(function(a, b) {
+    return (a[1] > b[1]) ? -1 : ((b[1] > a[1]) ? 1 : 0);
+  });
+  var nextGeneration = solutions.slice(0, elitismSize);
+  var selectionPool = solutions.slice(elitismSize);
+  // TODO: proper tournament or roulette selection
+  while (nextGeneration.length < populationSize) {
+  	var index = Math.floor(Math.random() * selectionPool.length);
+    nextGeneration.push(selectionPool[index]);
+    selectionPool.splice(index, 1);
+  }
+  solutions = nextGeneration;
+}
+
+
+
+function evolutionStep() {
+  mutation();
+  // Random node swap
+  nodeSwap();
+  // Random crossing-over
+  crossover();
+  getNextGeneration();
+  var fitnessList = solutions.map((x) => x[1]);
+  fitnessList.sort(function(a, b) {
+  	return b - a;
+	});
+  updateInfo(fitnessList);
+  //update best graph
+  for (var i = 0; i < graph.nodes.length; i++) {
+    graph.nodes[i].x = solutions[0][0][i * 2];
+    graph.nodes[i].y = solutions[0][0][i * 2 + 1];
+  }
+  currentEvolutionStep++;
+  updateChartTimeline(fitnessList);
+}
+
+
+var nodeIdIndexMap = indexMap(graph);
+export var printt = nodeIdIndexMap
+
+
+graph = nodeCoordinates(graph)
+reachEquilibrium()
+//initial solutions
+solutions = solutionsUpdate()
 evolutionStep();
-
-
-
 
 
 
