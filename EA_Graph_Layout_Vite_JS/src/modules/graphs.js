@@ -2448,9 +2448,9 @@ export var graph1 = {
       { name: "Gene" },
       { name: "Chemical" },
       { name: "Disease" },
-      { name: "VariantAnnotation", symbol: "diamond" },
+      { name: "VariantAnnotation" },
       { name: "Phenotype" },
-      { name: "ClinicalAnnotation", symbol: "diamond" },
+      { name: "ClinicalAnnotation" },
       { name: "Pathway" },
     ],
     edges: [
@@ -2473,5 +2473,19 @@ export var graph1 = {
       { source: "ClinicalAnnotation", target: "Disease" },
       { source: "Pathway", target: "Disease" },
       { source: "ClinicalAnnotation", target: "Phenotype" },
+    ]
+  };
+
+
+  export var graph4 = {
+    nodes: [
+      { name: "Anatomy" },
+      { name: "Gene" },
+      { name: "Chemical" },
+    ],
+    edges: [
+      { source: "Anatomy", target: "Gene" },
+      { source: "Anatomy", target: "Chemical" },
+      { source: "Gene", target: "Chemical" },
     ]
   };

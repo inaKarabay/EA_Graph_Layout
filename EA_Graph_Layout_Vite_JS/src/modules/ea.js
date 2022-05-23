@@ -1,10 +1,12 @@
 import { graph1, graph2, graph3 } from '../modules/graphs';
 
-export var graph = graph1; 
+export var graph = graph3; 
 export var infoDiv = document.getElementById('info');
 export var chart = echarts.init(document.getElementById('canvas'));
 export var chartTimeline = echarts.init(document.getElementById('canvasTimeline'));
 
+var nodes_amount = graph.nodes.length;
+var edges_amount = graph.edges.length;
 //size of nodes
 var nodeRadius = 10
 //max graph width
@@ -32,6 +34,8 @@ var solutionCountSoFar = 0;
 var populationSize = 20;
 var elitismSize = 5;
 var solutions = [];
+
+
 
 var option = {
 	animation: false,
@@ -85,9 +89,32 @@ function nodeCoordinates(graph) {
   for (var i = 0; i < graph.nodes.length; i++) {
     graph.nodes[i].x = Math.random() * width;
     graph.nodes[i].y = Math.random() * height;
+    //graph.nodes[i].category = 0;
     if (graph.nodes[i].symbolSize === undefined) {
       graph.nodes[i].symbolSize = nodeRadius;
     }
+  }
+  return graph
+}
+
+/**
+ * 
+ * TODO remove
+ */
+function extraNode(graph) {
+  for (var i = 0; i < graph.nodes.length; i++) {
+    graph.nodes[i].edgenode = false;
+    graph.nodes[i].edgenodeX = 0;
+    graph.nodes[i].edgenodeY = 0;
+  }
+  return graph
+}
+
+function edgeBend(graph) {
+  for (var i = 0; i < graph.edges.length; i++) {
+    graph.edges[i].edgenode = false;
+    graph.edges[i].edgenodeX = 0;
+    graph.edges[i].edgenodeY = 0;
   }
   return graph
 }
@@ -259,7 +286,7 @@ function intersectsLineCircle(sx, sy, tx, ty, cx, cy, cr) {
  * @param {*} solution graph proposal
  * @returns fitness score for given graph
  */
-function fitness(solution) {
+function fitnessOld(solution) {
   var score = 0;
   // Penalize overlapping nodes
   for (var i = 0; i < solution.length; i += 2) {
@@ -327,9 +354,86 @@ function fitness(solution) {
 
 /**
  * 
+ * @param {*} solution graph proposal
+ * @returns fitness score for given graph
+ */
+ function fitness(solution) {
+  var score = 0;
+  // Penalize overlapping nodes
+  for (var i = 0; i < solution.length; i += 2) {
+    var x = solution[i];
+    var y = solution[i + 1];
+    if (nodeExists(x,y)) {
+      var symbolSize1 = graph.nodes[i / 2].symbolSize / 2;
+      for (var j = 0; j < solution.length; j += 2) {
+        if (i !== j) {
+          var x2 = solution[j];
+          var y2 = solution[j + 1];
+          if (nodeExists(x2,y2)) {
+            var symbolSize2 = graph.nodes[j / 2].symbolSize / 2;
+            var distance = Math.sqrt((x2 - x) ** 2 + (y2 - y) ** 2);
+            if (distance < symbolSize1 + symbolSize2) {
+              score -= 1;
+            }
+        }
+        }
+      }
+    }
+  }
+  for (var i = 0; i < graph.edges.length; i++) {
+    var s1 = nodeIdIndexMap[graph.edges[i].source] * 2;
+    var t1 = nodeIdIndexMap[graph.edges[i].target] * 2;
+    // Penalize nodes intersecting edges
+  	for (var j = 0; j < (graph.nodes.length*2); j += 2) {
+    	if (j == s1 || j == t1) {
+      	continue;
+      }
+      var symbolSize1 = graph.nodes[j / 2].symbolSize / 2;
+    	if (intersectsLineCircle(solution[s1], solution[s1 + 1], solution[t1], solution[t1 + 1], solution[j], solution[j + 1], symbolSize1)) {
+      	score -= 100;
+      }
+    }
+    // Penalize crossing edges
+    for (var j = 0; j < (graph.nodes.length*2); j++) {
+      if (i !== j) {
+        var s2 = nodeIdIndexMap[graph.edges[j].source] * 2;
+        var t2 = nodeIdIndexMap[graph.edges[j].target] * 2;
+        if (intersectsLineLine(
+            solution[s1], solution[s1 + 1],
+            solution[t1], solution[t1 + 1],
+            solution[s2], solution[s2 + 1],
+            solution[t2], solution[t2 + 1],
+          )) {
+          score -= 1;
+        }
+      }
+    }
+  }
+  /*
+  // Penalize larger graph size
+  var minX = solution[0];
+  var maxX = solution[0];
+  var minY = solution[1];
+  var maxY = solution[1];
+  for (var i = 2; i < solution.length; i += 2) {
+    minX = Math.min(minX, solution[i]);
+    maxX = Math.max(maxX, solution[i]);
+    minY = Math.min(minY, solution[i + 1]);
+    maxY = Math.max(maxY, solution[i + 1]);
+  }
+  score -= (maxX - minX) / 600;
+  score -= (maxY - minY) / 600;
+  */
+  return score;
+}
+
+
+/**
+ * 
  * @returns new graph solutions + their fitness for whole population
  */
 function solutionsUpdate() {
+  //normal nodes
   for (var k = 0; k < populationSize; k++) {
     var solution = [];
     for (var i = 0; i < graph.nodes.length; i++) {
@@ -341,6 +445,13 @@ function solutionsUpdate() {
         solution.push(Math.random() * width);
         solution.push(Math.random() * height);
       }
+    }
+    //edge nodes
+    for (var e = 0; e < edges_amount; e++) {
+      //x coordinate
+      solution.push(null);
+      //y coordinate
+      solution.push(null);
     }
     solutions.push([solution, fitness(solution)]);
   }
@@ -360,6 +471,83 @@ function mutation() {
     }
   }
 }
+
+/**
+ * 
+ * 
+ */
+ function mutationEdgeNodes() {
+  for (var i = 0; i < populationSize; i++) {
+    var mutationIndex = Math.floor(Math.random() * edges_amount);
+    var newSolution = [...solutions[i][0]];
+    newSolution[2*mutationIndex] = solution.push(Math.random() * width);
+    newSolution[2*mutationIndex+1] = solution.push(Math.random() * height);
+    solutions.push([newSolution, fitness(newSolution)]);
+  }
+}
+
+/**
+ * 
+ * TODO remove
+ */
+function mutation_extra_Nodes() {
+  for (var i = 0; i < populationSize; i++) {
+    //change node
+    if (Math.random() < 0.7) {
+      var nodeToAdd = Math.floor(Math.random() * graph.nodes.length)
+      if (graph.nodes[nodeToAdd].edgenode == true) {
+        graph.nodes[nodeToAdd].edgenode = false;
+      } else {
+        graph.nodes[nodeToAdd].edgenode = true;
+        graph.nodes[nodeToAdd].edgenodeX = Math.random() * width;
+        graph.nodes[nodeToAdd].edgenodeY = Math.random() * height;
+      }
+    }
+  }
+}
+
+function mutationEdgeBend() {
+  for (var i = 0; i < populationSize; i++) {
+    //change node
+    if (Math.random() < 0.7) {
+      var edgeToBend = Math.floor(Math.random() * graph.edges.length)
+      if (graph.edges[edgeToBend].edgenode == true) {
+        graph.edges[edgeToBend].edgenode = false;
+      } else {
+        graph.edges[edgeToBend].edgenode = true;
+        graph.edges[edgeToBend].edgenodeX = Math.random() * width;
+        graph.edges[edgeToBend].edgenodeY = Math.random() * height;
+      }
+    }
+  }
+}
+
+function buildFullGraph() {
+  var fullgraph = graph;
+  //every edge that exists gets an edgenode + 2 new edges
+  for (var i = 0; i < edges_amount; i++) {
+    var node = {};
+    node.name = graph.edges[i].source.concat(graph.edges[i].target); 
+    node.symbolSize = nodeRadius;
+    node.x = Math.random() * width;
+    node.y = Math.random() * height;
+    node.symbol = "diamond";
+    //node.category = 1;
+    fullgraph.nodes.push(node);
+    var edge = {};
+    edge.source = graph.edges[i].source;
+    edge.target = fullgraph.nodes[nodes_amount + i].name;
+    fullgraph.edges.push(edge);
+    edge = {};
+    edge.source = fullgraph.nodes[nodes_amount + i].name;
+    edge.target = graph.edges[i].target;
+    fullgraph.edges.push(edge);
+    //var category = {categories: [{name: "A"}, {name: "B"}]};
+    //fullgraph.push(category);
+  }
+  return fullgraph;
+}
+
 
 function nodeSwap() {
   var nodeSwapSolution = Math.floor(Math.random() * solutions.length);
@@ -452,10 +640,45 @@ function getNextGeneration() {
   solutions = nextGeneration;
 }
 
+function nodeExists(node1, node2) {
+  if(node1 !== null && node2 !== null) {
+    return true
+  } else {
+    return false
+  }
 
+}
+//TODOTODO
+/** 
+ function buildGraph() {
+  var newgraph = graph;
+  for (var i = 0; i < graph.nodes.length; i++) {
+    newgraph.nodes[i].x = solutions[0][0][i * 2];
+    newgraph.nodes[i].y = solutions[0][0][i * 2 + 1];
+  }
+  for (var j = nodes_amount; j < (nodes_amount + edges_amount); j++) {
+    if(solutions[0][0][j * 2] !== null & solutions[0][0][j * 2 + 1] !== null){
+      //TODOTODO Add node, not only x and y
+      newgraph.nodes.push(fullGraph.nodes[j]);
+      //newgraph.edges.push(fullGraph.edges[graph.edges.length + ((j-graph.nodes.length) *2)]);
+      //newgraph.edges.push(fullGraph.edges[graph.edges.length + ((j-graph.nodes.length) *2) +1]);
+
+    }
+  }
+  option.series[0].data = newgraph.nodes;
+  //option.series[0].data = newgraph.edges;
+  chart.setOption(option);
+  
+
+}
+
+*/
 
 function evolutionStep() {
   mutation();
+  mutationEdgeNodes()
+  //mutationEdgeBend();
+  //mutation_extra_Nodes();
   // Random node swap
   nodeSwap();
   // Random crossing-over
@@ -467,24 +690,45 @@ function evolutionStep() {
 	});
   updateInfo(fitnessList);
   //update best graph
+  //build graph
   for (var i = 0; i < graph.nodes.length; i++) {
     graph.nodes[i].x = solutions[0][0][i * 2];
     graph.nodes[i].y = solutions[0][0][i * 2 + 1];
   }
+  buildGraph();
+
   currentEvolutionStep++;
   updateChartTimeline(fitnessList);
 }
 
 
 var nodeIdIndexMap = indexMap(graph);
-export var printt = nodeIdIndexMap
 
 
 graph = nodeCoordinates(graph)
+//graph = extraNode(graph)
+//graph = edgeBend(graph)
 reachEquilibrium()
 //initial solutions
 solutions = solutionsUpdate()
-evolutionStep();
+
+// graph with all extra edge-nodes + Edges
+var fullGraph = buildFullGraph();
+
+export var printt = fullGraph;
+option = {
+	animation: false,
+  series: [{
+    type: 'graph',
+    layout: 'none',
+    nodes: fullGraph.nodes,
+    edges: fullGraph.edges,
+    categories: fullGraph.categories,
+    symbol: "circle",
+  }]
+};
+chart.setOption(option);
+//evolutionStep();
 
 
 

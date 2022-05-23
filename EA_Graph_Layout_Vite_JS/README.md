@@ -30,6 +30,9 @@ src/components/Graph.vue Vue component for graph illustration
 TODO:
 0) Vue Struktur verbessern
 1) Eckpunkte einfügen 
+	In solutions?
+
+
 	-> Graphstruktur damit ergänzen
 	- wie wird angezeigt das Eckpunkt existiert? -> zu graph als extra Feature, oder als neuer Knoten, der weggelassen werden kann?
 	- wie wird angezeigt wie er verbunden wird zu knoten (dass sich kanten nicht unnötig kreuzen)
