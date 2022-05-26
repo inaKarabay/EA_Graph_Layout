@@ -27,7 +27,7 @@ var t = width * 0.1;
 var equilibriumReached = false;
 var iteration = 0;
 
-var evolutionSteps = 100000;
+var evolutionSteps = 10000;
 var currentEvolutionStep = 0;
 var solutionSize = graph.nodes.length * 2;
 var solutionCountSoFar = 0;
@@ -480,9 +480,17 @@ function mutation() {
   for (var i = 0; i < populationSize; i++) {
     var mutationIndex = Math.floor(Math.random() * edges_amount);
     var newSolution = [...solutions[i][0]];
-    newSolution[2*mutationIndex] = solution.push(Math.random() * width);
-    newSolution[2*mutationIndex+1] = solution.push(Math.random() * height);
+    
+    if (newSolution[2*mutationIndex] == null) {
+      newSolution[2*mutationIndex] = Math.random() * width;
+      newSolution[2*mutationIndex+1] = Math.random() * height;
+    } else {
+      newSolution[2*mutationIndex] = null;
+      newSolution[2*mutationIndex+1] = null;
+    }
+    
     solutions.push([newSolution, fitness(newSolution)]);
+    
   }
 }
 
@@ -606,8 +614,6 @@ function crossover() {
 }
 
 function updateChartTimeline(fitnessList) {
-  option.series[0].data = graph.nodes;
-  chart.setOption(option);
   if (timelineData.length === 0 || timelineData[timelineData.length - 1][1] > Math.abs(fitnessList[0])) {
     timelineData.push([timelineData.length, Math.abs(fitnessList[0])]);
     optionTimeline.series[0].data = timelineData;
@@ -649,13 +655,13 @@ function nodeExists(node1, node2) {
 
 }
 //TODOTODO
-/** 
- function buildGraph() {
-  var newgraph = graph;
-  for (var i = 0; i < graph.nodes.length; i++) {
+function buildGraph() {
+  var newgraph = fullGraph;
+  for (var i = 0; i < newgraph.nodes.length; i++) {
     newgraph.nodes[i].x = solutions[0][0][i * 2];
     newgraph.nodes[i].y = solutions[0][0][i * 2 + 1];
   }
+  /** 
   for (var j = nodes_amount; j < (nodes_amount + edges_amount); j++) {
     if(solutions[0][0][j * 2] !== null & solutions[0][0][j * 2 + 1] !== null){
       //TODOTODO Add node, not only x and y
@@ -665,25 +671,34 @@ function nodeExists(node1, node2) {
 
     }
   }
-  option.series[0].data = newgraph.nodes;
+  */
+  option = {
+    animation: false,
+    series: [{
+      type: 'graph',
+      layout: 'none',
+      nodes: newgraph.nodes,
+      edges: fullGraph.edges,
+      categories: fullGraph.categories,
+      symbol: "circle",
+    }]
+  };
   //option.series[0].data = newgraph.edges;
   chart.setOption(option);
-  
-
 }
 
-*/
 
 function evolutionStep() {
+   
   mutation();
-  mutationEdgeNodes()
-  //mutationEdgeBend();
-  //mutation_extra_Nodes();
-  // Random node swap
+  mutationEdgeNodes();
+  //Random node swap
+  //not for edge nodes
   nodeSwap();
   // Random crossing-over
   crossover();
   getNextGeneration();
+  
   var fitnessList = solutions.map((x) => x[1]);
   fitnessList.sort(function(a, b) {
   	return b - a;
@@ -696,7 +711,6 @@ function evolutionStep() {
     graph.nodes[i].y = solutions[0][0][i * 2 + 1];
   }
   buildGraph();
-
   currentEvolutionStep++;
   updateChartTimeline(fitnessList);
 }
@@ -706,8 +720,6 @@ var nodeIdIndexMap = indexMap(graph);
 
 
 graph = nodeCoordinates(graph)
-//graph = extraNode(graph)
-//graph = edgeBend(graph)
 reachEquilibrium()
 //initial solutions
 solutions = solutionsUpdate()
@@ -715,20 +727,8 @@ solutions = solutionsUpdate()
 // graph with all extra edge-nodes + Edges
 var fullGraph = buildFullGraph();
 
-export var printt = fullGraph;
-option = {
-	animation: false,
-  series: [{
-    type: 'graph',
-    layout: 'none',
-    nodes: fullGraph.nodes,
-    edges: fullGraph.edges,
-    categories: fullGraph.categories,
-    symbol: "circle",
-  }]
-};
-chart.setOption(option);
-//evolutionStep();
+export var printt = "";
+evolutionStep();
 
 
 
