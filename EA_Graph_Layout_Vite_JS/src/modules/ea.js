@@ -472,21 +472,49 @@ function mutation() {
   }
 }
 
+function midpoint(x1, y1, x2, y2) {
+  var midx = (x1 + x2) / 2 ;
+  var midy = (y1 +y2) / 2 ;
+  return [midx, midy];
+}
+
 /**
  * 
+ * find corresponding nodes for edgenode
+ */
+function neighbor_nodes(node) {
+  var corresponding_Edge = fullGraph.edges[node];
+  var node1 = nodeIdIndexMap[corresponding_Edge.source];
+  var node2 = nodeIdIndexMap[corresponding_Edge.target];
+  return [node1, node2];
+}
+/**
+ *
  * 
  */
  function mutationEdgeNodes() {
   for (var i = 0; i < populationSize; i++) {
     var mutationIndex = Math.floor(Math.random() * edges_amount);
     var newSolution = [...solutions[i][0]];
-    
-    if (newSolution[2*mutationIndex] == null) {
-      newSolution[2*mutationIndex] = Math.random() * width;
-      newSolution[2*mutationIndex+1] = Math.random() * height;
-    } else {
-      newSolution[2*mutationIndex] = null;
-      newSolution[2*mutationIndex+1] = null;
+    var mutationNode = (2* nodes_amount) + (2*mutationIndex);
+    if (newSolution[mutationNode] == null) {
+      var n = neighbor_nodes(mutationIndex);
+      var mid = midpoint(n[0].x, n[0].y, n[1].x, n[1].y);
+      var offset1 = Math.random() * 100.0 - 50.0;
+      var offset2 = Math.random() * 100.0 - 50.0;
+      newSolution[mutationNode] = mid[0] + offset1;
+      newSolution[mutationNode + 1] = mid[1].offset2;
+    } else  {
+      //either remove  or improve
+      if (Math.random() < 0.7) {
+        var offset1 = Math.random() * 100.0 - 50.0;
+        var offset2 = Math.random() * 100.0 - 50.0;
+        newSolution[mutationNode] += offset1;
+        newSolution[mutationNode + 1] += offset2;
+      } else {
+        newSolution[mutationNode] = null;
+        newSolution[mutationNode + 1] = null;
+      }
     }
     
     solutions.push([newSolution, fitness(newSolution)]);
@@ -537,9 +565,10 @@ function buildFullGraph() {
     var node = {};
     node.name = graph.edges[i].source.concat(graph.edges[i].target); 
     node.symbolSize = nodeRadius;
-    node.x = Math.random() * width;
-    node.y = Math.random() * height;
+    node.x = null;
+    node.y = null;
     node.symbol = "diamond";
+    node.color = '#d5ceeb';
     //node.category = 1;
     fullgraph.nodes.push(node);
     var edge = {};
@@ -655,7 +684,7 @@ function nodeExists(node1, node2) {
 
 }
 //TODOTODO
-function buildGraph() {
+function displayGraph() {
   var newgraph = fullGraph;
   for (var i = 0; i < newgraph.nodes.length; i++) {
     newgraph.nodes[i].x = solutions[0][0][i * 2];
@@ -710,7 +739,7 @@ function evolutionStep() {
     graph.nodes[i].x = solutions[0][0][i * 2];
     graph.nodes[i].y = solutions[0][0][i * 2 + 1];
   }
-  buildGraph();
+  displayGraph();
   currentEvolutionStep++;
   updateChartTimeline(fitnessList);
 }
@@ -728,6 +757,7 @@ solutions = solutionsUpdate()
 var fullGraph = buildFullGraph();
 
 export var printt = "";
+
 evolutionStep();
 
 
