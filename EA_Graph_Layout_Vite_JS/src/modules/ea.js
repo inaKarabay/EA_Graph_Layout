@@ -258,13 +258,13 @@ function intersectsLineCircle(sx, sy, tx, ty, cx, cy, cr) {
     var x = solution[i];
     var y = solution[i + 1];
     if (nodeExists(x,y)) {
-      var symbolSize1 = graph.nodes[i / 2].symbolSize / 2;
+      var symbolSize1 = fullGraph.nodes[i / 2].symbolSize / 2;
       for (var j = 0; j < solution.length; j += 2) {
         if (i !== j) {
           var x2 = solution[j];
           var y2 = solution[j + 1];
           if (nodeExists(x2,y2)) {
-            var symbolSize2 = graph.nodes[j / 2].symbolSize / 2;
+            var symbolSize2 = fullGraph.nodes[j / 2].symbolSize / 2;
             var distance = Math.sqrt((x2 - x) ** 2 + (y2 - y) ** 2);
             if (distance < symbolSize1 + symbolSize2) {
               score -= 1;
@@ -274,34 +274,46 @@ function intersectsLineCircle(sx, sy, tx, ty, cx, cy, cr) {
       }
     }
   }
-  for (var i = 0; i < graph.edges.length; i++) {
-    var s1 = nodeIdIndexMap[graph.edges[i].source] * 2;
-    var t1 = nodeIdIndexMap[graph.edges[i].target] * 2;
+  for (var i = 0; i < fullGraph.edges.length; i++) {
+    /**
+     * when edge does not exist one node is null
+     * or: other edge exists
+     */
+    var s1 = fullNodeIdIndexMap[fullGraph.edges[i].source] * 2;
+    var t1 = fullNodeIdIndexMap[fullGraph.edges[i].target] * 2; 
     // Penalize nodes intersecting edges
-  	for (var j = 0; j < (graph.nodes.length*2); j += 2) {
-    	if (j == s1 || j == t1) {
-      	continue;
-      }
-      var symbolSize1 = graph.nodes[j / 2].symbolSize / 2;
-    	if (intersectsLineCircle(solution[s1], solution[s1 + 1], solution[t1], solution[t1 + 1], solution[j], solution[j + 1], symbolSize1)) {
-      	score -= 100;
+  	for (var j = 0; j < (fullGraph.nodes.length*2); j += 2) {
+      if(solution[j] != null && solution[s1] != null && solution[t1] != null) {
+        if (j == s1 || j == t1) {
+          continue;
+        }
+        var symbolSize1 = fullGraph.nodes[j / 2].symbolSize / 2;
+        if (intersectsLineCircle(solution[s1], solution[s1 + 1], solution[t1], solution[t1 + 1], solution[j], solution[j + 1], symbolSize1)) {
+          score -= 100;
+        }
       }
     }
     // Penalize crossing edges
-    for (var j = 0; j < graph.edges.length; j++) {
+    for (var j = 0; j < fullGraph.edges.length; j++) {
       if (i !== j) {
-        var s2 = nodeIdIndexMap[graph.edges[j].source] * 2;
-        var t2 = nodeIdIndexMap[graph.edges[j].target] * 2;
-        if (intersectsLineLine(
+        var s2 = fullNodeIdIndexMap[fullGraph.edges[j].source] * 2;
+        var t2 = fullNodeIdIndexMap[fullGraph.edges[j].target] * 2; 
+        if (solution[s1] != null && solution[t1] != null && solution[s2] != null && solution[t2] != null) {
+          printt = solution
+          if (intersectsLineLine(
             solution[s1], solution[s1 + 1],
             solution[t1], solution[t1 + 1],
             solution[s2], solution[s2 + 1],
             solution[t2], solution[t2 + 1],
           )) {
-          score -= 1;
+            printt = "yup"
+            score -= 1;
         }
+        }
+        
       }
     }
+    
   }
   /*
   // Penalize larger graph size
@@ -414,7 +426,7 @@ function mutationEdgeNodes() {
 }
 
 function buildFullGraph() {
-  var fullgraph = graph;
+  var fullgraph = JSON.parse(JSON.stringify(graph));
   //every edge that exists gets an edgenode + 2 new edges
   for (var i = 0; i < edges_amount; i++) {
     var node = {};
@@ -593,15 +605,7 @@ function evolutionStep() {
 
 
 var nodeIdIndexMap = indexMap(graph);
-
-
-graph = nodeCoordinates(graph)
-export var printt = "graph";
-export var print2 = "";
-reachEquilibrium()
-//initial solutions
-solutions = solutionsUpdate()
-
+graph = nodeCoordinates(graph);
 // graph with all extra edge-nodes + Edges
 var fullGraph = buildFullGraph();
 var option = {
@@ -616,4 +620,10 @@ var option = {
   }]
 };
 chart.setOption(option);
+var fullNodeIdIndexMap = indexMap(fullGraph);
+export var printt = "graph";
+export var print2 = fullNodeIdIndexMap;
+reachEquilibrium()
+//initial solutions
+solutions = solutionsUpdate()
 evolutionStep();
