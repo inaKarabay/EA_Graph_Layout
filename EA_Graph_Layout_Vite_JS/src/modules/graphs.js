@@ -2501,3 +2501,71 @@ export var graph1 = {
       { source: "C", target: "G" },
     ]
   };
+
+  export var graphFullyConnected = {
+    nodes: [
+      { name: "A" },
+      { name: "B" },
+      { name: "C" },
+      { name: "D" },
+      { name: "E" },
+      { name: "F" },
+      { name: "G" },
+    ],
+    edges: [
+      { source: "A", target: "B" },
+      { source: "A", target: "C" },
+      { source: "A", target: "D" },
+      { source: "A", target: "E" },
+      { source: "A", target: "F" },
+      { source: "A", target: "G" },
+      { source: "B", target: "C" },
+      { source: "B", target: "D" },
+      { source: "B", target: "E" },
+      { source: "B", target: "F" },
+      { source: "B", target: "G" },
+      { source: "C", target: "D" },
+      { source: "C", target: "E" },
+      { source: "C", target: "F" },
+      { source: "C", target: "G" },
+      { source: "D", target: "E" },
+      { source: "D", target: "F" },
+      { source: "D", target: "G" },
+      { source: "E", target: "F" },
+      { source: "E", target: "G" },
+      { source: "F", target: "G" },
+      
+    ]
+  };
+
+  export var graphHalfConnected = {
+    nodes: [
+      { name: "A" },
+      { name: "B" },
+      { name: "C" },
+      { name: "D" },
+      { name: "E" },
+      { name: "F" },
+      { name: "G" },
+    ],
+    edges: [
+      { source: "A", target: "B" },
+      { source: "A", target: "C" },
+      { source: "A", target: "D" },
+      { source: "A", target: "E" },
+      { source: "A", target: "F" },
+      { source: "A", target: "G" },
+      { source: "B", target: "C" },
+      { source: "B", target: "D" },
+      { source: "B", target: "E" },
+      { source: "B", target: "F" },
+      { source: "B", target: "G" },
+      { source: "C", target: "D" },
+      { source: "C", target: "E" },
+      { source: "C", target: "F" },
+
+      
+      
+
+    ]
+  };

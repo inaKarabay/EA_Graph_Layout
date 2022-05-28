@@ -1,6 +1,6 @@
-import { graph1, graph2, graphCircle, graphShort } from '../modules/graphs';
+import { graph1, graph2, graphCircle, graphShort, graphFullyConnected, graphHalfConnected } from '../modules/graphs';
 
-export var graph = graphCircle; 
+export var graph = graphHalfConnected;
 export var infoDiv = document.getElementById('info');
 export var chart = echarts.init(document.getElementById('canvas'));
 export var chartTimeline = echarts.init(document.getElementById('canvasTimeline'));
@@ -246,6 +246,16 @@ function intersectsLineCircle(sx, sy, tx, ty, cx, cy, cr) {
   return dist < cr * cr;
 }
 
+function edgeRedundant(edge, solution) {
+  var redundant = false;
+  if (edge <= edges_amount) {
+    if (solution[(nodes_amount *2) + (edge * 2)] != null) {
+      redundant = true;
+    }
+  }
+  return redundant;
+}
+
 /**
  * 
  * @param {*} solution graph proposal
@@ -276,44 +286,43 @@ function intersectsLineCircle(sx, sy, tx, ty, cx, cy, cr) {
   }
   for (var i = 0; i < fullGraph.edges.length; i++) {
     /**
-     * when edge does not exist one node is null
-     * or: other edge exists
+     * when edge does not exist one node is null 
+     * when edgenode exists (=edgeRedundant) -> remove original edge 
      */
     var s1 = fullNodeIdIndexMap[fullGraph.edges[i].source] * 2;
     var t1 = fullNodeIdIndexMap[fullGraph.edges[i].target] * 2; 
-    // Penalize nodes intersecting edges
-  	for (var j = 0; j < (fullGraph.nodes.length*2); j += 2) {
-      if(solution[j] != null && solution[s1] != null && solution[t1] != null) {
-        if (j == s1 || j == t1) {
-          continue;
-        }
-        var symbolSize1 = fullGraph.nodes[j / 2].symbolSize / 2;
-        if (intersectsLineCircle(solution[s1], solution[s1 + 1], solution[t1], solution[t1 + 1], solution[j], solution[j + 1], symbolSize1)) {
-          score -= 100;
+    if(solution[s1] != null && solution[t1] != null && !edgeRedundant(i, solution)) {
+      // Penalize nodes intersecting edges
+      for (var j = 0; j < (fullGraph.nodes.length*2); j += 2) {
+        if(solution[j] != null ) {
+          if (j == s1 || j == t1) {
+            continue;
+          }
+          var symbolSize1 = fullGraph.nodes[j / 2].symbolSize / 2;
+          if (intersectsLineCircle(solution[s1], solution[s1 + 1], solution[t1], solution[t1 + 1], solution[j], solution[j + 1], symbolSize1)) {
+            score -= 100;
+          }
         }
       }
-    }
-    // Penalize crossing edges
-    for (var j = 0; j < fullGraph.edges.length; j++) {
-      if (i !== j) {
-        var s2 = fullNodeIdIndexMap[fullGraph.edges[j].source] * 2;
-        var t2 = fullNodeIdIndexMap[fullGraph.edges[j].target] * 2; 
-        if (solution[s1] != null && solution[t1] != null && solution[s2] != null && solution[t2] != null) {
-          printt = solution
-          if (intersectsLineLine(
-            solution[s1], solution[s1 + 1],
-            solution[t1], solution[t1 + 1],
-            solution[s2], solution[s2 + 1],
-            solution[t2], solution[t2 + 1],
-          )) {
-            printt = "yup"
-            score -= 1;
+      // Penalize crossing edges
+      for (var j = 0; j < fullGraph.edges.length; j++) {
+        if (i !== j) {
+          var s2 = fullNodeIdIndexMap[fullGraph.edges[j].source] * 2;
+          var t2 = fullNodeIdIndexMap[fullGraph.edges[j].target] * 2; 
+          if (solution[s2] != null && solution[t2] != null && !edgeRedundant(j, solution)) {
+            if (intersectsLineLine(
+              solution[s1], solution[s1 + 1],
+              solution[t1], solution[t1 + 1],
+              solution[s2], solution[s2 + 1],
+              solution[t2], solution[t2 + 1],
+            )) {
+              score -= 1;
+          }
+          }
+          
         }
-        }
-        
       }
-    }
-    
+    } 
   }
   /*
   // Penalize larger graph size
@@ -563,19 +572,8 @@ function displayGraph() {
       newgraph.edges[j].source = newgraph.edges[j].target;
     }
   }
-  
-  option = {
-    animation: false,
-    series: [{
-      type: 'graph',
-      layout: 'none',
-      nodes: newgraph.nodes,
-      edges: newgraph.edges,
-      categories: graph.categories,
-      symbol: "circle",
-    }]
-  };
-  option.series[0].data = newgraph.nodes,
+  option.series[0].nodes = newgraph.nodes,
+  option.series[0].edges = newgraph.edges,
   chart.setOption(option);
 }
 
@@ -622,7 +620,7 @@ var option = {
 chart.setOption(option);
 var fullNodeIdIndexMap = indexMap(fullGraph);
 export var printt = "graph";
-export var print2 = fullNodeIdIndexMap;
+export var print2 = "";
 reachEquilibrium()
 //initial solutions
 solutions = solutionsUpdate()
