@@ -27,7 +27,7 @@ var t = width * 0.1;
 var equilibriumReached = false;
 var iteration = 0;
 
-var evolutionSteps = 10000;
+var evolutionSteps = 100;
 var currentEvolutionStep = 0;
 var solutionSize = graph.nodes.length * 2;
 var solutionCountSoFar = 0;
@@ -477,23 +477,20 @@ function neighbor_nodes(node) {
   var node2 = nodeIdIndexMap[corresponding_Edge.target];
   return [graph.nodes[node1].x, graph.nodes[node1].y,graph.nodes[node2].x,graph.nodes[node2].y];
 }
-/**
- *
- * 
- */
-/**
- * function mutationEdgeNodes() {
+
+
+function mutationEdgeNodes() {
   for (var i = 0; i < populationSize; i++) {
     var mutationIndex = Math.floor(Math.random() * edges_amount);
     var newSolution = [...solutions[i][0]];
     var mutationNode = (2* nodes_amount) + (2*mutationIndex);
     if (newSolution[mutationNode] == null) {
       var n = neighbor_nodes(mutationIndex);
-      var mid = midpoint(n[0].x, n[0].y, n[1].x, n[1].y);
+      var mid = midpoint(n[0], n[1], n[2], n[3]);
       var offset1 = Math.random() * 100.0 - 50.0;
       var offset2 = Math.random() * 100.0 - 50.0;
       newSolution[mutationNode] = mid[0] + offset1;
-      newSolution[mutationNode + 1] = mid[1].offset2;
+      newSolution[mutationNode + 1] = mid[1] + offset2;
     } else  {
       //either remove  or improve
       if (Math.random() < 0.7) {
@@ -510,9 +507,9 @@ function neighbor_nodes(node) {
     
   }
 }
- */
- /**
-  * function mutationEdgeNodes() {
+ 
+/**
+function mutationEdgeNodes() {
   for (var i = 0; i < populationSize; i++) {
     var mutationIndex = Math.floor(Math.random() * edges_amount);
     var newSolution = [...solutions[i][0]];
@@ -526,25 +523,8 @@ function neighbor_nodes(node) {
     
   }
 }
-  */
+*/
 
-function mutationEdgeNodes() {
-  for (var i = 0; i < populationSize; i++) {
-    var mutationIndex = Math.floor(Math.random() * edges_amount);
-    var newSolution = [...solutions[i][0]];
-    var mutationNode = (2* nodes_amount) + (2*mutationIndex);
-    if (newSolution[mutationNode] == null) {
-      var n = neighbor_nodes(mutationIndex);
-      var mid = midpoint(n[0], n[1], n[2], n[3]);
-      var offset1 = Math.random() * 100.0 - 50.0;
-      var offset2 = Math.random() * 100.0 - 50.0;
-      newSolution[mutationNode] = mid[0] + offset1;
-      newSolution[mutationNode + 1] = mid[1].offset2;
-    } 
-    solutions.push([newSolution, fitness(newSolution)]);
-    
-  }
-}
 
 /**
  * 
@@ -746,7 +726,7 @@ function displayGraph() {
   */
   option.series[0].data = newgraph.nodes,
   chart.setOption(option);
-  printt = option;
+  
 }
 
 
