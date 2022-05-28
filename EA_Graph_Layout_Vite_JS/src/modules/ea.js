@@ -1,6 +1,6 @@
-import { graph1, graph2, graph3 } from '../modules/graphs';
+import { graph1, graph2, graphCircle, graphShort } from '../modules/graphs';
 
-export var graph = graph3; 
+export var graph = graphCircle; 
 export var infoDiv = document.getElementById('info');
 export var chart = echarts.init(document.getElementById('canvas'));
 export var chartTimeline = echarts.init(document.getElementById('canvasTimeline'));
@@ -10,9 +10,9 @@ var edges_amount = graph.edges.length;
 //size of nodes
 var nodeRadius = 10
 //max graph width
-var width = 600;
+var width = 400;
 //max graph height
-var height = 600;
+var height =400;
 
 var COOLING_RATE = 0.25;
 //if change to be made is smaller than this criterion it stops
@@ -37,18 +37,7 @@ var solutions = [];
 
 
 
-var option = {
-	animation: false,
-  series: [{
-    type: 'graph',
-    layout: 'none',
-    nodes: graph.nodes,
-    edges: graph.edges,
-    categories: graph.categories,
-    symbol: "circle",
-  }]
-};
-chart.setOption(option);
+
 var timelineData = [];
 var optionTimeline = {
 	animation: false,
@@ -394,7 +383,7 @@ function fitnessOld(solution) {
       }
     }
     // Penalize crossing edges
-    for (var j = 0; j < (graph.nodes.length*2); j++) {
+    for (var j = 0; j < graph.edges.length; j++) {
       if (i !== j) {
         var s2 = nodeIdIndexMap[graph.edges[j].source] * 2;
         var t2 = nodeIdIndexMap[graph.edges[j].target] * 2;
@@ -486,13 +475,14 @@ function neighbor_nodes(node) {
   var corresponding_Edge = fullGraph.edges[node];
   var node1 = nodeIdIndexMap[corresponding_Edge.source];
   var node2 = nodeIdIndexMap[corresponding_Edge.target];
-  return [node1, node2];
+  return [graph.nodes[node1].x, graph.nodes[node1].y,graph.nodes[node2].x,graph.nodes[node2].y];
 }
 /**
  *
  * 
  */
- function mutationEdgeNodes() {
+/**
+ * function mutationEdgeNodes() {
   for (var i = 0; i < populationSize; i++) {
     var mutationIndex = Math.floor(Math.random() * edges_amount);
     var newSolution = [...solutions[i][0]];
@@ -516,7 +506,41 @@ function neighbor_nodes(node) {
         newSolution[mutationNode + 1] = null;
       }
     }
+    solutions.push([newSolution, fitness(newSolution)]);
     
+  }
+}
+ */
+ /**
+  * function mutationEdgeNodes() {
+  for (var i = 0; i < populationSize; i++) {
+    var mutationIndex = Math.floor(Math.random() * edges_amount);
+    var newSolution = [...solutions[i][0]];
+    var mutationN = (2* nodes_amount) + (2*mutationIndex);
+    //var mutationN = mutationIndex;
+    
+    newSolution[mutationN] = Math.random() * width;
+    newSolution[mutationN +1] = Math.random() * height;
+    printt = newSolution;
+    solutions.push([newSolution, fitness(newSolution)]);
+    
+  }
+}
+  */
+
+function mutationEdgeNodes() {
+  for (var i = 0; i < populationSize; i++) {
+    var mutationIndex = Math.floor(Math.random() * edges_amount);
+    var newSolution = [...solutions[i][0]];
+    var mutationNode = (2* nodes_amount) + (2*mutationIndex);
+    if (newSolution[mutationNode] == null) {
+      var n = neighbor_nodes(mutationIndex);
+      var mid = midpoint(n[0], n[1], n[2], n[3]);
+      var offset1 = Math.random() * 100.0 - 50.0;
+      var offset2 = Math.random() * 100.0 - 50.0;
+      newSolution[mutationNode] = mid[0] + offset1;
+      newSolution[mutationNode + 1] = mid[1].offset2;
+    } 
     solutions.push([newSolution, fitness(newSolution)]);
     
   }
@@ -568,7 +592,7 @@ function buildFullGraph() {
     node.x = null;
     node.y = null;
     node.symbol = "diamond";
-    node.color = '#d5ceeb';
+    //node.color = '#d5ceeb';
     //node.category = 1;
     fullgraph.nodes.push(node);
     var edge = {};
@@ -686,6 +710,12 @@ function nodeExists(node1, node2) {
 //TODOTODO
 function displayGraph() {
   var newgraph = fullGraph;
+  /** 
+  for (var i = 0; i < graph.nodes.length; i++) {
+    graph.nodes[i].x = solutions[0][0][i * 2];
+    graph.nodes[i].y = solutions[0][0][i * 2 + 1];
+  }
+  */
   for (var i = 0; i < newgraph.nodes.length; i++) {
     newgraph.nodes[i].x = solutions[0][0][i * 2];
     newgraph.nodes[i].y = solutions[0][0][i * 2 + 1];
@@ -701,19 +731,22 @@ function displayGraph() {
     }
   }
   */
+ /** 
   option = {
     animation: false,
     series: [{
       type: 'graph',
       layout: 'none',
       nodes: newgraph.nodes,
-      edges: fullGraph.edges,
-      categories: fullGraph.categories,
+      edges: newgraph.edges,
+      categories: graph.categories,
       symbol: "circle",
     }]
   };
-  //option.series[0].data = newgraph.edges;
+  */
+  option.series[0].data = newgraph.nodes,
   chart.setOption(option);
+  printt = option;
 }
 
 
@@ -735,10 +768,6 @@ function evolutionStep() {
   updateInfo(fitnessList);
   //update best graph
   //build graph
-  for (var i = 0; i < graph.nodes.length; i++) {
-    graph.nodes[i].x = solutions[0][0][i * 2];
-    graph.nodes[i].y = solutions[0][0][i * 2 + 1];
-  }
   displayGraph();
   currentEvolutionStep++;
   updateChartTimeline(fitnessList);
@@ -749,6 +778,8 @@ var nodeIdIndexMap = indexMap(graph);
 
 
 graph = nodeCoordinates(graph)
+export var printt = "graph";
+
 reachEquilibrium()
 //initial solutions
 solutions = solutionsUpdate()
@@ -756,7 +787,18 @@ solutions = solutionsUpdate()
 // graph with all extra edge-nodes + Edges
 var fullGraph = buildFullGraph();
 
-export var printt = "";
+var option = {
+	animation: false,
+  series: [{
+    type: 'graph',
+    layout: 'none',
+    nodes: fullGraph.nodes,
+    edges: fullGraph.edges,
+    categories: graph.categories,
+    symbol: "circle",
+  }]
+};
+chart.setOption(option);
 
 evolutionStep();
 

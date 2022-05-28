@@ -2442,7 +2442,7 @@ export var graph1 = {
   }, ],
   };
   
-  export var graph3 = {
+  export var graphShort = {
     nodes: [
       { name: "Anatomy" },
       { name: "Gene" },
@@ -2477,15 +2477,27 @@ export var graph1 = {
   };
 
 
-  export var graph4 = {
+  export var graphCircle = {
     nodes: [
-      { name: "Anatomy" },
-      { name: "Gene" },
-      { name: "Chemical" },
+      { name: "A" },
+      { name: "B" },
+      { name: "C" },
+      { name: "D" },
+      { name: "E" },
+      { name: "F" },
+      { name: "G" },
     ],
     edges: [
-      { source: "Anatomy", target: "Gene" },
-      { source: "Anatomy", target: "Chemical" },
-      { source: "Gene", target: "Chemical" },
+      { source: "A", target: "B" },
+      { source: "B", target: "C" },
+      { source: "C", target: "D" },
+      { source: "D", target: "E" },
+      { source: "E", target: "F" },
+      { source: "F", target: "G" },
+      { source: "G", target: "A" },
+      { source: "A", target: "D" },
+      { source: "A", target: "E" },
+      { source: "C", target: "F" },
+      { source: "C", target: "G" },
     ]
   };
