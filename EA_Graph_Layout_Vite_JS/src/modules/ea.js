@@ -35,9 +35,6 @@ var populationSize = 20;
 var elitismSize = 5;
 var solutions = [];
 
-
-
-
 var timelineData = [];
 var optionTimeline = {
 	animation: false,
@@ -66,6 +63,7 @@ function indexMap(graph) {
   }
   return nodeIdIndexMap
 }
+
 /**
  * 
  * @param {*} graph 
@@ -82,28 +80,6 @@ function nodeCoordinates(graph) {
     if (graph.nodes[i].symbolSize === undefined) {
       graph.nodes[i].symbolSize = nodeRadius;
     }
-  }
-  return graph
-}
-
-/**
- * 
- * TODO remove
- */
-function extraNode(graph) {
-  for (var i = 0; i < graph.nodes.length; i++) {
-    graph.nodes[i].edgenode = false;
-    graph.nodes[i].edgenodeX = 0;
-    graph.nodes[i].edgenodeY = 0;
-  }
-  return graph
-}
-
-function edgeBend(graph) {
-  for (var i = 0; i < graph.edges.length; i++) {
-    graph.edges[i].edgenode = false;
-    graph.edges[i].edgenodeX = 0;
-    graph.edges[i].edgenodeY = 0;
   }
   return graph
 }
@@ -275,77 +251,6 @@ function intersectsLineCircle(sx, sy, tx, ty, cx, cy, cr) {
  * @param {*} solution graph proposal
  * @returns fitness score for given graph
  */
-function fitnessOld(solution) {
-  var score = 0;
-  // Penalize overlapping nodes
-  for (var i = 0; i < solution.length; i += 2) {
-    var x = solution[i];
-    var y = solution[i + 1];
-    var symbolSize1 = graph.nodes[i / 2].symbolSize / 2;
-    for (var j = 0; j < solution.length; j += 2) {
-      if (i !== j) {
-        var x2 = solution[j];
-        var y2 = solution[j + 1];
-        var symbolSize2 = graph.nodes[j / 2].symbolSize / 2;
-        var distance = Math.sqrt((x2 - x) ** 2 + (y2 - y) ** 2);
-        if (distance < symbolSize1 + symbolSize2) {
-          score -= 1;
-        }
-      }
-    }
-  }
-  for (var i = 0; i < graph.edges.length; i++) {
-    var s1 = nodeIdIndexMap[graph.edges[i].source] * 2;
-    var t1 = nodeIdIndexMap[graph.edges[i].target] * 2;
-    // Penalize nodes intersecting edges
-  	for (var j = 0; j < solution.length; j += 2) {
-    	if (j == s1 || j == t1) {
-      	continue;
-      }
-      var symbolSize1 = graph.nodes[j / 2].symbolSize / 2;
-    	if (intersectsLineCircle(solution[s1], solution[s1 + 1], solution[t1], solution[t1 + 1], solution[j], solution[j + 1], symbolSize1)) {
-      	score -= 100;
-      }
-    }
-    // Penalize crossing edges
-    for (var j = 0; j < graph.edges.length; j++) {
-      if (i !== j) {
-        var s2 = nodeIdIndexMap[graph.edges[j].source] * 2;
-        var t2 = nodeIdIndexMap[graph.edges[j].target] * 2;
-        if (intersectsLineLine(
-            solution[s1], solution[s1 + 1],
-            solution[t1], solution[t1 + 1],
-            solution[s2], solution[s2 + 1],
-            solution[t2], solution[t2 + 1],
-          )) {
-          score -= 1;
-        }
-      }
-    }
-  }
-  /*
-  // Penalize larger graph size
-  var minX = solution[0];
-  var maxX = solution[0];
-  var minY = solution[1];
-  var maxY = solution[1];
-  for (var i = 2; i < solution.length; i += 2) {
-    minX = Math.min(minX, solution[i]);
-    maxX = Math.max(maxX, solution[i]);
-    minY = Math.min(minY, solution[i + 1]);
-    maxY = Math.max(maxY, solution[i + 1]);
-  }
-  score -= (maxX - minX) / 600;
-  score -= (maxY - minY) / 600;
-  */
-  return score;
-}
-
-/**
- * 
- * @param {*} solution graph proposal
- * @returns fitness score for given graph
- */
  function fitness(solution) {
   var score = 0;
   // Penalize overlapping nodes
@@ -507,60 +412,6 @@ function mutationEdgeNodes() {
     
   }
 }
- 
-/**
-function mutationEdgeNodes() {
-  for (var i = 0; i < populationSize; i++) {
-    var mutationIndex = Math.floor(Math.random() * edges_amount);
-    var newSolution = [...solutions[i][0]];
-    var mutationN = (2* nodes_amount) + (2*mutationIndex);
-    //var mutationN = mutationIndex;
-    
-    newSolution[mutationN] = Math.random() * width;
-    newSolution[mutationN +1] = Math.random() * height;
-    printt = newSolution;
-    solutions.push([newSolution, fitness(newSolution)]);
-    
-  }
-}
-*/
-
-
-/**
- * 
- * TODO remove
- */
-function mutation_extra_Nodes() {
-  for (var i = 0; i < populationSize; i++) {
-    //change node
-    if (Math.random() < 0.7) {
-      var nodeToAdd = Math.floor(Math.random() * graph.nodes.length)
-      if (graph.nodes[nodeToAdd].edgenode == true) {
-        graph.nodes[nodeToAdd].edgenode = false;
-      } else {
-        graph.nodes[nodeToAdd].edgenode = true;
-        graph.nodes[nodeToAdd].edgenodeX = Math.random() * width;
-        graph.nodes[nodeToAdd].edgenodeY = Math.random() * height;
-      }
-    }
-  }
-}
-
-function mutationEdgeBend() {
-  for (var i = 0; i < populationSize; i++) {
-    //change node
-    if (Math.random() < 0.7) {
-      var edgeToBend = Math.floor(Math.random() * graph.edges.length)
-      if (graph.edges[edgeToBend].edgenode == true) {
-        graph.edges[edgeToBend].edgenode = false;
-      } else {
-        graph.edges[edgeToBend].edgenode = true;
-        graph.edges[edgeToBend].edgenodeX = Math.random() * width;
-        graph.edges[edgeToBend].edgenodeY = Math.random() * height;
-      }
-    }
-  }
-}
 
 function buildFullGraph() {
   var fullgraph = graph;
@@ -690,43 +541,12 @@ function nodeExists(node1, node2) {
 //TODOTODO
 function displayGraph() {
   var newgraph = fullGraph;
-  /** 
-  for (var i = 0; i < graph.nodes.length; i++) {
-    graph.nodes[i].x = solutions[0][0][i * 2];
-    graph.nodes[i].y = solutions[0][0][i * 2 + 1];
-  }
-  */
   for (var i = 0; i < newgraph.nodes.length; i++) {
     newgraph.nodes[i].x = solutions[0][0][i * 2];
     newgraph.nodes[i].y = solutions[0][0][i * 2 + 1];
   }
-  /** 
-  for (var j = nodes_amount; j < (nodes_amount + edges_amount); j++) {
-    if(solutions[0][0][j * 2] !== null & solutions[0][0][j * 2 + 1] !== null){
-      //TODOTODO Add node, not only x and y
-      newgraph.nodes.push(fullGraph.nodes[j]);
-      //newgraph.edges.push(fullGraph.edges[graph.edges.length + ((j-graph.nodes.length) *2)]);
-      //newgraph.edges.push(fullGraph.edges[graph.edges.length + ((j-graph.nodes.length) *2) +1]);
-
-    }
-  }
-  */
- /** 
-  option = {
-    animation: false,
-    series: [{
-      type: 'graph',
-      layout: 'none',
-      nodes: newgraph.nodes,
-      edges: newgraph.edges,
-      categories: graph.categories,
-      symbol: "circle",
-    }]
-  };
-  */
   option.series[0].data = newgraph.nodes,
   chart.setOption(option);
-  
 }
 
 
