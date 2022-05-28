@@ -27,7 +27,7 @@ var t = width * 0.1;
 var equilibriumReached = false;
 var iteration = 0;
 
-var evolutionSteps = 100;
+var evolutionSteps = 10000;
 var currentEvolutionStep = 0;
 var solutionSize = graph.nodes.length * 2;
 var solutionCountSoFar = 0;
@@ -540,11 +540,29 @@ function nodeExists(node1, node2) {
 }
 //TODOTODO
 function displayGraph() {
-  var newgraph = fullGraph;
+  var newgraph =  JSON.parse(JSON.stringify(fullGraph));
   for (var i = 0; i < newgraph.nodes.length; i++) {
     newgraph.nodes[i].x = solutions[0][0][i * 2];
     newgraph.nodes[i].y = solutions[0][0][i * 2 + 1];
   }
+  //TODO remove old edges if edgenode exists
+  for (var j = 0; j < edges_amount; j++) {
+    if (solutions[0][0][(nodes_amount * 2) + (j * 2)] != null) {
+      newgraph.edges[j].source = newgraph.edges[j].target;
+    }
+  }
+  
+  option = {
+    animation: false,
+    series: [{
+      type: 'graph',
+      layout: 'none',
+      nodes: newgraph.nodes,
+      edges: newgraph.edges,
+      categories: graph.categories,
+      symbol: "circle",
+    }]
+  };
   option.series[0].data = newgraph.nodes,
   chart.setOption(option);
 }
@@ -579,14 +597,13 @@ var nodeIdIndexMap = indexMap(graph);
 
 graph = nodeCoordinates(graph)
 export var printt = "graph";
-
+export var print2 = "";
 reachEquilibrium()
 //initial solutions
 solutions = solutionsUpdate()
 
 // graph with all extra edge-nodes + Edges
 var fullGraph = buildFullGraph();
-
 var option = {
 	animation: false,
   series: [{
@@ -599,9 +616,4 @@ var option = {
   }]
 };
 chart.setOption(option);
-
 evolutionStep();
-
-
-
-
