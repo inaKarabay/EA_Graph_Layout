@@ -1,6 +1,6 @@
 import { graph1, graph2, graphCircle, graphShort, graphFullyConnected, graphHalfConnected } from '../modules/graphs';
 
-export var graph = graphCircle;
+export var graph = graphFullyConnected;
 export var infoDiv = document.getElementById('info');
 export var chart = echarts.init(document.getElementById('canvas'));
 export var chartTimeline = echarts.init(document.getElementById('canvasTimeline'));
@@ -29,8 +29,7 @@ var iteration = 0;
 
 var evolutionSteps = 10000;
 var currentEvolutionStep = 0;
-var solutionSize = graph.nodes.length * 2;
-var solutionCountSoFar = 0;
+//var solutionSize = graph.nodes.length * 2;
 var populationSize = 20;
 var elitismSize = 5;
 var solutions = [];
@@ -378,7 +377,7 @@ function mutation() {
     //TODO isnt Math.random() always <1 ?
     if (Math.random() < 1.5) {
       //mutation of one coordinate of one node
-      var mutationIndex = Math.floor(Math.random() * solutionSize);
+      var mutationIndex = Math.floor(Math.random() * (graph.nodes.length * 2));
       var newSolution = [...solutions[i][0]];
       var offset = Math.random() * 100.0 - 50.0;
       newSolution[mutationIndex] += offset;
@@ -411,7 +410,7 @@ function mutationEdgeNodes() {
     var newSolution = [...solutions[i][0]];
     var mutationNode = (2* nodes_amount) + (2*mutationIndex);
     if (newSolution[mutationNode] == null) {
-      if (Math.random() < 0.7) {
+      if (Math.random() < 0.6) {
         newSolution[mutationNode] = Math.random() * width;
         newSolution[mutationNode + 1] = Math.random() * width;
       } else {
@@ -436,7 +435,6 @@ function mutationEdgeNodes() {
       }
     }
     solutions.push([newSolution, fitness(newSolution)]);
-    
   }
 }
 
@@ -478,10 +476,11 @@ function nodeSwap() {
   newSolution[nodeSwapPosition2] = tempX;
   newSolution[nodeSwapPosition2 + 1] = tempY;
   solutions.push([newSolution, fitness(newSolution)]);
-  solutionCountSoFar = solutions.length;
 }
 
 function crossover() {
+  var solutionCountSoFar = solutions.length;
+  var solutionSize = fullGraph.nodes.length * 2;
   for (var k = 0; k < 10; k++) {
     var crossoverIndex1 = Math.floor(Math.random() * solutionCountSoFar);
     var crossoverIndex2 = Math.floor(Math.random() * solutionCountSoFar);
@@ -584,16 +583,15 @@ function displayGraph() {
 
 
 function evolutionStep() {
-   
-  mutation();
-  mutationEdgeNodes();
+  // Random crossing-over
+  crossover();
   //Random node swap
   //not for edge nodes
   nodeSwap();
-  // Random crossing-over
-  crossover();
-  getNextGeneration();
+  mutation();
+  mutationEdgeNodes();
   
+  getNextGeneration();
   var fitnessList = solutions.map((x) => x[1]);
   fitnessList.sort(function(a, b) {
   	return b - a;
