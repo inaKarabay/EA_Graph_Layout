@@ -1,6 +1,6 @@
 import { graph1, graph2, graphCircle, graphShort, graphFullyConnected, graphHalfConnected } from '../modules/graphs';
 
-export var graph = graphHalfConnected;
+export var graph = graphCircle;
 export var infoDiv = document.getElementById('info');
 export var chart = echarts.init(document.getElementById('canvas'));
 export var chartTimeline = echarts.init(document.getElementById('canvasTimeline'));
@@ -411,12 +411,18 @@ function mutationEdgeNodes() {
     var newSolution = [...solutions[i][0]];
     var mutationNode = (2* nodes_amount) + (2*mutationIndex);
     if (newSolution[mutationNode] == null) {
-      var n = neighbor_nodes(mutationIndex);
-      var mid = midpoint(n[0], n[1], n[2], n[3]);
-      var offset1 = Math.random() * 100.0 - 50.0;
-      var offset2 = Math.random() * 100.0 - 50.0;
-      newSolution[mutationNode] = mid[0] + offset1;
-      newSolution[mutationNode + 1] = mid[1] + offset2;
+      if (Math.random() < 0.7) {
+        newSolution[mutationNode] = Math.random() * width;
+        newSolution[mutationNode + 1] = Math.random() * width;
+      } else {
+        var n = neighbor_nodes(mutationIndex);
+        var mid = midpoint(n[0], n[1], n[2], n[3]);
+        var offset1 = Math.random() * 100.0 - 50.0;
+        var offset2 = Math.random() * 100.0 - 50.0;
+        newSolution[mutationNode] = mid[0] + offset1;
+        newSolution[mutationNode + 1] = mid[1] + offset2;
+      }
+
     } else  {
       //either remove  or improve
       if (Math.random() < 0.7) {
@@ -438,14 +444,14 @@ function buildFullGraph() {
   var fullgraph = JSON.parse(JSON.stringify(graph));
   //every edge that exists gets an edgenode + 2 new edges
   for (var i = 0; i < edges_amount; i++) {
-    var node = {};
+    var node = {};  
     node.name = graph.edges[i].source.concat(graph.edges[i].target); 
     node.symbolSize = nodeRadius;
     node.x = null;
     node.y = null;
     node.symbol = "diamond";
-    //node.color = '#d5ceeb';
-    //node.category = 1;
+    node.symbolSize = 15;
+    node.itemStyle = {color: 'red'};
     fullgraph.nodes.push(node);
     var edge = {};
     edge.source = graph.edges[i].source;
@@ -455,8 +461,6 @@ function buildFullGraph() {
     edge.source = fullgraph.nodes[nodes_amount + i].name;
     edge.target = graph.edges[i].target;
     fullgraph.edges.push(edge);
-    //var category = {categories: [{name: "A"}, {name: "B"}]};
-    //fullgraph.push(category);
   }
   return fullgraph;
 }
@@ -559,14 +563,15 @@ function nodeExists(node1, node2) {
   }
 
 }
-//TODOTODO
+
+
 function displayGraph() {
   var newgraph =  JSON.parse(JSON.stringify(fullGraph));
   for (var i = 0; i < newgraph.nodes.length; i++) {
     newgraph.nodes[i].x = solutions[0][0][i * 2];
     newgraph.nodes[i].y = solutions[0][0][i * 2 + 1];
   }
-  //TODO remove old edges if edgenode exists
+  //remove old edges if edgenode exists
   for (var j = 0; j < edges_amount; j++) {
     if (solutions[0][0][(nodes_amount * 2) + (j * 2)] != null) {
       newgraph.edges[j].source = newgraph.edges[j].target;
@@ -615,6 +620,7 @@ var option = {
     edges: fullGraph.edges,
     categories: graph.categories,
     symbol: "circle",
+    
   }]
 };
 chart.setOption(option);
