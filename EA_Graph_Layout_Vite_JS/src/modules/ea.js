@@ -1,6 +1,6 @@
 import { graph1, graph2, graphCircle, graphShort, graphFullyConnected, graphHalfConnected } from '../modules/graphs';
 
-export var graph = graphFullyConnected;
+export var graph = graphCircle;
 export var infoDiv = document.getElementById('info');
 export var chart = echarts.init(document.getElementById('canvas'));
 export var chartTimeline = echarts.init(document.getElementById('canvasTimeline'));
@@ -33,6 +33,7 @@ var currentEvolutionStep = 0;
 var populationSize = 20;
 var elitismSize = 5;
 var solutions = [];
+var mostMutations = Math.floor(nodes_amount/3);
 
 var timelineData = [];
 var optionTimeline = {
@@ -321,7 +322,10 @@ function edgeRedundant(edge, solution) {
           
         }
       }
-    } 
+    } else if (edgeRedundant(i, solution)) {
+      //penalize edge_nodes
+      score -= 0;
+    }
   }
   /*
   // Penalize larger graph size
@@ -374,15 +378,16 @@ function solutionsUpdate() {
 
 function mutation() {
   for (var i = 0; i < populationSize; i++) {
+    var newSolution = [...solutions[i][0]];
+    var mutationAmount =  Math.floor(Math.random() * mostMutations)
     //TODO isnt Math.random() always <1 ?
-    if (Math.random() < 1.5) {
+    for (var j = 0; j < mutationAmount; j++) {
       //mutation of one coordinate of one node
       var mutationIndex = Math.floor(Math.random() * (graph.nodes.length * 2));
-      var newSolution = [...solutions[i][0]];
       var offset = Math.random() * 100.0 - 50.0;
       newSolution[mutationIndex] += offset;
-      solutions.push([newSolution, fitness(newSolution)]);
     }
+    solutions.push([newSolution, fitness(newSolution)]);
   }
 }
 
@@ -580,7 +585,22 @@ function displayGraph() {
   option.series[0].edges = newgraph.edges,
   chart.setOption(option);
 }
+function buildHistogram(nodes_Edges) {
+  var histogram = new Array(nodes_amount).fill(0); 
+  for (var j = 0; j < nodes_Edges.length; j++) {
+    histogram[nodes_Edges[j]] += 1;
+  }
+  return histogram;
+}
 
+function nodesOutgoingEdges() {
+  var nodes_Edges = new Array(nodes_amount).fill(0);  
+  for (var i = 0; i < edges_amount; i++) {
+    nodes_Edges[nodeIdIndexMap[graph.edges[i].source]] += 1;
+    nodes_Edges[nodeIdIndexMap[graph.edges[i].target]] += 1;
+  }
+  return nodes_Edges;
+}
 
 function evolutionStep() {
   // Random crossing-over
@@ -623,9 +643,11 @@ var option = {
 };
 chart.setOption(option);
 var fullNodeIdIndexMap = indexMap(fullGraph);
-export var printt = "graph";
+export var printt = "";
 export var print2 = "";
 reachEquilibrium()
 //initial solutions
 solutions = solutionsUpdate()
+var nodes_Edges = nodesOutgoingEdges();
+var histogram = buildHistogram(nodes_Edges);
 evolutionStep();
