@@ -33,7 +33,9 @@ var currentEvolutionStep = 0;
 var populationSize = 20;
 var elitismSize = 5;
 var solutions = [];
-var mostMutations = Math.floor(nodes_amount/3);
+
+var mostMutations = Math.floor(nodes_amount);
+var crossoverAmount = Math.floor(edges_amount/2);
 
 var timelineData = [];
 var optionTimeline = {
@@ -469,7 +471,7 @@ function buildFullGraph() {
 }
 
 
-function nodeSwap() {
+function recombination() {
   var nodeSwapSolution = Math.floor(Math.random() * solutions.length);
   var nodeSwapPosition1 = Math.floor(Math.random() * graph.nodes.length) * 2;
   var nodeSwapPosition2 = Math.floor(Math.random() * graph.nodes.length) * 2;
@@ -486,7 +488,7 @@ function nodeSwap() {
 function crossover() {
   var solutionCountSoFar = solutions.length;
   var solutionSize = fullGraph.nodes.length * 2;
-  for (var k = 0; k < 10; k++) {
+  for (var k = 0; k < crossoverAmount; k++) {
     var crossoverIndex1 = Math.floor(Math.random() * solutionCountSoFar);
     var crossoverIndex2 = Math.floor(Math.random() * solutionCountSoFar);
     while (crossoverIndex2 === crossoverIndex1) {
@@ -495,7 +497,7 @@ function crossover() {
     var crossoverPosition = Math.floor(Math.random() * solutionSize);
     solutions.push(solutions[crossoverIndex1].slice(0, crossoverPosition).concat(solutions[crossoverIndex2].slice(crossoverPosition)));
   }
-  for (var k = 0; k < 10; k++) {
+  for (var k = 0; k < crossoverAmount; k++) {
     var crossoverIndex1 = Math.floor(Math.random() * solutionCountSoFar);
     var crossoverIndex2 = Math.floor(Math.random() * solutionCountSoFar);
     while (crossoverIndex2 === crossoverIndex1) {
@@ -523,7 +525,6 @@ function crossover() {
   }
   var crossoverPosition = Math.floor(Math.random() * solutionSize);
   solutions.push(solutions[crossoverIndex1].slice(0, crossoverPosition).concat(solutions[crossoverIndex2].slice(crossoverPosition)));
-  
 }
 
 function updateChartTimeline(fitnessList) {
@@ -585,13 +586,6 @@ function displayGraph() {
   option.series[0].edges = newgraph.edges,
   chart.setOption(option);
 }
-function buildHistogram(nodes_Edges) {
-  var histogram = new Array(nodes_amount).fill(0); 
-  for (var j = 0; j < nodes_Edges.length; j++) {
-    histogram[nodes_Edges[j]] += 1;
-  }
-  return histogram;
-}
 
 function nodesOutgoingEdges() {
   var nodes_Edges = new Array(nodes_amount).fill(0);  
@@ -602,12 +596,29 @@ function nodesOutgoingEdges() {
   return nodes_Edges;
 }
 
+function buildHistogram(nodes_Edges) {
+  var histogram = new Array(nodes_amount).fill(0); 
+  for (var j = 0; j < nodes_Edges.length; j++) {
+    histogram[nodes_Edges[j]] += 1;
+  }
+  return histogram;
+}
+
+function hub() {
+  var sum = 0;
+  for(var i in nodes_Edges) {
+      sum += nodes_Edges[i];
+  }
+  var mean = sum / nodes_Edges.length;
+  return mean
+}
+
 function evolutionStep() {
   // Random crossing-over
   crossover();
   //Random node swap
   //not for edge nodes
-  nodeSwap();
+  recombination();
   mutation();
   mutationEdgeNodes();
   
@@ -650,4 +661,6 @@ reachEquilibrium()
 solutions = solutionsUpdate()
 var nodes_Edges = nodesOutgoingEdges();
 var histogram = buildHistogram(nodes_Edges);
+var hub_Nodes = hub(histogram);
+print2 =hub_Nodes;
 evolutionStep();
