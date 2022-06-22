@@ -1,0 +1,247 @@
+export class Preprocessing {
+    constructor(graph, COOLING_RATE = 0.25, CRITERION = 15,C = 0.4, width = 400, height =400, nodeRadius = 10, populationSize = 20) {
+        this.graph = graph;
+        this.COOLING_RATE = COOLING_RATE;
+        //if change to be made is smaller than this criterion it stops
+        this.CRITERION = CRITERION;
+        this.C = C;
+        this.width = width;
+        this.height = height;
+        this.nodeRadius = nodeRadius;
+        this.populationSize = populationSize;
+        //area of graph
+        //TODO why not width*height?
+        this.area = Math.min(this.width * this.width, this.height * this.height);
+        this.k = C * Math.sqrt(this.area / this.graph.nodes.length);
+        this.t = this.width * 0.1;
+        this.equilibriumReached = false;
+        this.iteration = 0;
+        this.edges_amount = this.graph.edges.length;
+        this.nodes_amount = this.graph.nodes.length;
+    }
+
+
+    get nodeIdIndexMap() {
+        return this.indexMap(this.graph);
+    }
+
+    get fullNodeIdIndexMap() {
+        return this.indexMap(this.fullGraph);
+    }
+
+    /**
+    * nodeIdIndexMap: Gives each node a name and index
+    */ 
+    indexMap(graph) {
+        var nodeIdIndexMap = {}
+        for (var i = 0; i < graph.nodes.length; i++) {
+            nodeIdIndexMap[graph.nodes[i].id || graph.nodes[i].name] = i;
+        }
+        return nodeIdIndexMap;
+    }
+
+    get new_graph() {
+        return this.nodeCoordinates();
+    }
+    /**
+    * 
+    * @param {*} graph 
+    * x = x coordinate
+    * y = y coordinate
+    * randomly assigns coordinates
+    * @returns 
+    */
+    nodeCoordinates() {
+        for (var i = 0; i < this.graph.nodes.length; i++) {
+            this.graph.nodes[i].x = Math.random() * this.width;
+            this.graph.nodes[i].y = Math.random() * this.height;
+            //graph.nodes[i].category = 0;
+            if (this.graph.nodes[i].symbolSize === undefined) {
+                this.graph.nodes[i].symbolSize = this.nodeRadius;
+            }
+        }
+        return this.graph
+    }
+
+    reachEquilibrium() {
+        while (!this.equilibriumReached && this.iteration < 1000) {
+            this.equilibriumReached = this.simulateForceDirectedStep();
+            this.iteration++;
+        }
+    }
+
+    /**
+    * 
+    * @param {*} d distance to repulsive object
+    * @param {*} k factor of repulsion
+    * @returns 
+    */
+    forceRepulsive(d, k) {
+        return (k * k) / d;
+    }
+
+    /**
+    * 
+    * @param {*} x node coordinate
+    * @param {*} y node coordinate
+    * @returns vector length
+    */
+    vectorLength(x, y) {
+        return Math.sqrt(x * x + y * y);
+    }
+
+    //use in simulateForceDirectedStep
+    nodeDistance(node1, node2) {
+        var deltaPosX = node1.x - node2.x;
+        var deltaPosY = node1.y - node2.y;
+        var distance = this.vectorLength(deltaPosX, deltaPosY);
+        return distance
+    }
+
+    /**
+    * 
+    * @param {*} d distance to force
+    * @param {*} k factor of attraction
+    * @returns force
+    */
+    forceAttractive(d, k) {
+        return (d * d) / k;
+    }
+
+    simulateForceDirectedStep() {
+        for (var i = 0; i < this.graph.nodes.length; i++) {
+            var v = this.graph.nodes[i];
+            v.displacementX = 0;
+            v.displacementY = 0;
+            // Light attraction to center of canvas
+
+            //distance from x/y to the center of the canvas 
+            var centerOffsetX = (this.width * 0.5) - v.x;
+            var centerOffsetY = (this.height * 0.5) - v.y;
+            var distanceFromCenter = this.vectorLength(centerOffsetX, centerOffsetY);
+
+            var centerAttraction = this.forceAttractive(distanceFromCenter, this.k);
+            v.displacementX += centerOffsetX * (1.0 / distanceFromCenter) * centerAttraction * 0.25;
+            v.displacementY += centerOffsetY * (1.0 / distanceFromCenter) * centerAttraction * 0.25;
+            // Repulsion from other nodes
+            for (var j = 0; j < this.graph.nodes.length; j++) {
+                var u = this.graph.nodes[j];
+            if (i === j) {
+                continue;
+            }
+            //distance from the two nodes
+            var deltaPosX = v.x - u.x;
+            var deltaPosY = v.y - u.y;
+            var length = this.vectorLength(deltaPosX, deltaPosY);
+            var repulsiveForce = this.forceRepulsive(length, this.k);
+            deltaPosX *= (1.0 / length) * repulsiveForce;
+            deltaPosY *= (1.0 / length) * repulsiveForce;
+            v.displacementX += deltaPosX;
+            v.displacementY += deltaPosY;
+            }
+        }
+        // Attraction between connected nodes
+        for (var i = 0; i < this.graph.edges.length; i++) {
+            var e = this.graph.edges[i];
+            var vi = this.nodeIdIndexMap[e.source];
+            var ui = this.nodeIdIndexMap[e.target];
+            if (vi === ui) {
+            continue;
+            }
+            //v and u are connected nodes
+            var v = this.graph.nodes[vi];
+            var u = this.graph.nodes[ui];
+            var deltaPosX = v.x - u.x;
+            var deltaPosY = v.y - u.y;
+            var length = this.vectorLength(deltaPosX, deltaPosY);
+            var attractiveForce = this.forceAttractive(length, this.k);
+            deltaPosX *= (1.0 / length) * attractiveForce;
+            deltaPosY *= (1.0 / length) * attractiveForce;
+            v.displacementX -= deltaPosX;
+            v.displacementY -= deltaPosY;
+            u.displacementX += deltaPosX;
+            u.displacementY += deltaPosY;
+        }
+        var equilibriumReached = true;
+        for (var i = 0; i < this.graph.nodes.length; i++) {
+            var v = this.graph.nodes[i];
+            var displacementX = v.displacementX;
+            var displacementY = v.displacementY;
+            var length = this.vectorLength(displacementX, displacementY);
+            if (length > this.CRITERION) {
+                equilibriumReached = false;
+            }
+            //change at most as big as t
+            displacementX *= (1.0 / length) * Math.min(length, this.t);
+            displacementY *= (1.0 / length) * Math.min(length, this.t);
+            //set the change
+            v.x += displacementX;
+            v.y += displacementY;
+        }
+        //TODO is t ever changed??
+        this.t = Math.max(this.t * (1 - this.COOLING_RATE), 1);
+        return equilibriumReached;
+    }
+
+
+    /**
+    * 
+    * @returns new graph solutions + their fitness for whole population
+    */
+    solutionsUpdate() {
+        var solutions = [];
+        //normal nodes
+        for (var k = 0; k < this.populationSize; k++) {
+            var solution = [];
+            for (var i = 0; i < this.graph.nodes.length; i++) {
+            //initial graph stays
+            if (k === 0) {
+                solution.push(this.graph.nodes[i].x);
+                solution.push(this.graph.nodes[i].y);
+            } else {
+                solution.push(Math.random() * this.width);
+                solution.push(Math.random() * this.height);
+            }
+            }
+            //edge nodes
+            for (var e = 0; e < this.edges_amount; e++) {
+                //x coordinate
+                solution.push(null);
+                //y coordinate
+                solution.push(null);
+            }
+            //TODO: add fitness
+            solutions.push([solution, -Infinity]);
+        }
+        return solutions
+    }
+
+    get fullGraph() {
+        return this.buildFullGraph();
+    }
+
+    buildFullGraph() {
+        var fullgraph = JSON.parse(JSON.stringify(this.graph));
+        //every edge that exists gets an edgenode + 2 new edges
+        for (var i = 0; i < this.edges_amount; i++) {
+            var node = {};  
+            node.name = this.graph.edges[i].source.concat(this.graph.edges[i].target); 
+            node.symbolSize = this.nodeRadius;
+            node.x = null;
+            node.y = null;
+            node.symbol = "diamond";
+            node.symbolSize = 15;
+            node.itemStyle = {color: 'red'};
+            fullgraph.nodes.push(node);
+            var edge = {};
+            edge.source = this.graph.edges[i].source;
+            edge.target = fullgraph.nodes[this.nodes_amount + i].name;
+            fullgraph.edges.push(edge);
+            edge = {};
+            edge.source = fullgraph.nodes[this.nodes_amount + i].name;
+            edge.target = this.graph.edges[i].target;
+            fullgraph.edges.push(edge);
+        }
+        return fullgraph;
+    }
+}
